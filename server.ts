@@ -18,16 +18,23 @@ async function startServer() {
 
   // API Routes
   app.post("/api/generate", async (req, res) => {
-    const { prompt, chain, history, options } = req.body;
+    const { 
+      prompt, 
+      chain, 
+      history = [], 
+      includeNatspec, 
+      includeTests, 
+      includeSDK 
+    } = req.body;
     
-    console.log(`[GENERATE] Request received. Chain: ${chain}, History: ${history.length} msgs`);
+    console.log(`[INCODE_GATEWAY] Incoming Transmission: Chain=${chain}, History=${history.length}, PromptLength=${prompt?.length}`);
 
-    // Strictly use the new key provided by the user (shuaibthalhat54@gmail.com)
+    // Strictly use the new key provided by the user
     const apiKey = process.env.GEMINIAPI_KEY1;
 
     if (!apiKey) {
-      console.error("[GENERATE] Error: GEMINIAPI_KEY1 is missing.");
-      return res.status(500).json({ error: "GEMINIAPI_KEY1 is not configured in the project settings." });
+      console.error("[INCODE_GATEWAY] CRITICAL_ERROR: GEMINIAPI_KEY1 IS NULL");
+      return res.status(500).json({ error: "GATEWAY_LOCK: GEMINIAPI_KEY1_MISSING" });
     }
 
     try {
@@ -36,21 +43,20 @@ async function startServer() {
 
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash", // Upgraded to 2.0 Flash for superior FHE code gen
         systemInstruction: `You are INCODE, an expert AI specialized in Confidential Computing for Inco Network.
 Target: ${chain === "evm" ? "EVM (Solidity ^0.8.28)" : "SVM (Rust/Anchor)"}
 
 Core Mission:
-- Generate secure, encrypted smart contracts using Inco's FHE (Fully Homomorphic Encryption) capabilities.
+- Generate secure, encrypted smart contracts using Inco's FHE capabilities.
 - EVM: Always import "@inco/lightning/Lib.sol". Use euint8, euint32, ebool.
 - SVM: Use Inco SVM SDK for confidential state.
-- If [IMPORTED_CONTRACT] segments are provided, analyze and prioritize migrating them to Inco FHE.
+- If [IMPORTED_CONTRACT] segments are provided, prioritize migrating them to Inco FHE.
 
-Code Style:
-- Professional and secure.
-${options.includeNatspec ? "- Use full NatSpec documentation." : ""}
-${options.includeTests ? "- Include a comprehensive integration test suite." : ""}
-${options.includeSDK ? "- Include SDK integration code snippets." : ""}
+Parameters:
+${includeNatspec ? "- ENFORCED: Use full NatSpec documentation." : "- Standard documentation."}
+${includeTests ? "- ENFORCED: Include comprehensive integration test suites." : ""}
+${includeSDK ? "- ENFORCED: Include SDK integration snippets." : ""}
 `
       });
       
@@ -67,9 +73,10 @@ ${options.includeSDK ? "- Include SDK integration code snippets." : ""}
         res.write(text);
       }
       res.end();
+      console.log("[INCODE_GATEWAY] Transmission Complete.");
     } catch (error: any) {
-      console.error("Generation Error:", error);
-      res.status(500).write(`ERROR: ${error.message}`);
+      console.error("[INCODE_GATEWAY] Internal Failure:", error);
+      res.status(500).write(`CRITICAL_GATEWAY_FAILURE: ${error.message}`);
       res.end();
     }
   });
