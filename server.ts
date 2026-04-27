@@ -22,10 +22,11 @@ async function startServer() {
       prompt, 
       chain, 
       history = [], 
-      includeNatspec, 
-      includeTests, 
-      includeSDK 
+      // Changed: The frontend sends these inside an 'options' object
+      options = {}
     } = req.body;
+    
+    const { includeNatspec, includeTests, includeSDK } = options;
     
     console.log(`[INCODE_GATEWAY] Incoming Transmission: Chain=${chain}, History=${history.length}, PromptLength=${prompt?.length}`);
 

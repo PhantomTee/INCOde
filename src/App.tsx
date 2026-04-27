@@ -9,12 +9,15 @@ import {
   History, 
   Settings as SettingsIcon,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Loader2
 } from 'lucide-react';
 import { useIncode } from './hooks/useIncode';
 import { Logo, SectionHeader } from './components/Branding';
 import { ChatLog } from './components/ChatLog';
 import { CodePanel } from './components/CodePanel';
+import { Templates } from './components/Templates';
+import { HistoryPanel } from './components/HistoryPanel';
 
 export default function App() {
   const {
@@ -34,6 +37,7 @@ export default function App() {
 
   const [prompt, setPrompt] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,9 +157,6 @@ export default function App() {
                    <SettingsIcon className="w-3 h-3 text-terminal-accent" />
                    <span className="text-[8px] font-bold text-terminal-text">SYSTEM_CONFIG</span>
                 </button>
-                <button onClick={clearHistory} className="text-[8px] font-black text-red-900 uppercase px-2 py-0.5 border border-red-900/40 hover:bg-red-900 hover:text-white transition-all">
-                  DISCONNECT ×
-                </button>
              </div>
           </div>
         </header>
@@ -200,20 +201,19 @@ export default function App() {
                 <h2 className="text-2xl md:text-3xl font-black mb-8 px-6 text-center uppercase tracking-tighter">{"AI >> START_INCODE_GENERATION"}</h2>
                 
                 {history.length === 0 && !isGenerating ? (
-                  <div className="flex flex-col gap-4 w-full max-w-lg px-6">
-                    {[
-                      { id: "1-/", label: "BUILD A SEALED-BID AUCTION", sub: "Confidential bidding with euint256" },
-                      { id: "2-/", label: "CONFIDENTIAL ERC20 TOKEN", sub: "Private balances and transfers" },
-                      { id: "3-/", label: "PRIVATE DAO VOTING SYSTEM", sub: "Hidden vote tallies via e.select" }
-                    ].map(item => (
-                      <button key={item.id} onClick={() => setPrompt(item.sub)} className="flex items-center gap-4 group">
-                        <span className="mono-label font-black text-xs">{item.id}</span>
-                        <div className="flex-1 border-2 border-terminal-text/20 bg-terminal-text/5 px-6 py-5 group-hover:bg-terminal-text group-hover:border-terminal-text group-hover:text-terminal-bg transition-all duration-300 rounded-lg shadow-sm">
-                          <div className="text-sm font-black mb-1">{item.label}</div>
-                          <div className="text-[10px] mono-label group-hover:text-terminal-bg/70">{item.sub}</div>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="w-full max-w-2xl px-6">
+                    <div className="flex items-center gap-3 mb-6 px-1">
+                      <Layers className="w-5 h-5 text-terminal-accent" />
+                      <h3 className="mono-label text-sm font-black uppercase tracking-widest text-terminal-text">Selected_Blueprints</h3>
+                    </div>
+                    <Templates 
+                      activeChain={chain}
+                      onSelect={(templatePrompt, templateChain) => {
+                        setChain(templateChain);
+                        setPrompt(templatePrompt);
+                        toast.success("TEMPLATE_LOADED");
+                      }}
+                    />
                   </div>
                 ) : (
                   <div className="w-full h-full flex flex-col overflow-hidden px-4 md:px-8">
@@ -244,9 +244,15 @@ export default function App() {
                     onKeyDown={handleKeyDown}
                     disabled={!address || isGenerating}
                     placeholder={address ? "ENTER_PROMPT_HERE // SYSTEM_LISTENING" : "CONNECTION_REQUIRED..."}
-                    className={`w-full bg-terminal-text/10 border-2 border-terminal-text/20 p-6 md:p-8 h-32 md:h-40 focus:outline-none focus:border-terminal-text/40 placeholder:text-terminal-text/20 uppercase font-bold text-sm md:text-lg rounded-xl transition-all ${!address ? 'opacity-30' : ''}`}
+                    className={`w-full bg-terminal-text/10 border-2 border-terminal-text/20 p-6 md:p-8 h-32 md:h-40 focus:outline-none focus:border-terminal-text/40 placeholder:text-terminal-text/20 uppercase font-bold text-sm md:text-lg rounded-xl transition-all ${!address ? 'opacity-30' : ''} ${isGenerating ? 'animate-pulse border-terminal-accent/30 shadow-[0_0_15px_rgba(85,255,0,0.1)]' : ''}`}
                   />
                   <div className="absolute right-6 bottom-6 flex items-center gap-4">
+                    {isGenerating && (
+                      <span className="text-[10px] text-terminal-accent font-black animate-pulse flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        TRANSMITTING_DATA...
+                      </span>
+                    )}
                     <span className="mono-label text-[8px] hidden md:block">CMD+ENTER to TRANSMIT</span>
                     <button className="opacity-30 hover:opacity-100 transition-opacity" disabled={!address || isGenerating}>
                       <Zap className="w-5 h-5" />
@@ -335,12 +341,29 @@ export default function App() {
                    {isGenerating ? "TRANSMITTING..." : "EXECUTE"}
                 </button>
                 
-                <button className="p-4 border-2 border-terminal-text/20 hover:bg-terminal-text hover:text-terminal-bg transition-all rounded-2xl group">
-                   <History className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                <button 
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="p-4 border-2 border-terminal-text/20 hover:bg-terminal-text hover:text-terminal-bg transition-all rounded-2xl group relative"
+                >
+                   <History className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                   {history.filter(m => m.role === 'model').length > 0 && (
+                     <div className="absolute top-2 right-2 w-2 h-2 bg-terminal-accent rounded-full animate-ping" />
+                   )}
                 </button>
               </div>
            </div>
         </footer>
+
+        <HistoryPanel 
+          isOpen={isHistoryOpen} 
+          onClose={() => setIsHistoryOpen(false)}
+          history={history}
+          onClear={clearHistory}
+          onSelect={(m) => {
+            // Scroll to code? The finding logic in CodePanel handles displaying it
+            toast.success("RESTORED_LOG_ENTRY");
+          }}
+        />
 
         {/* Settings Modal */}
         {isSettingsOpen && (

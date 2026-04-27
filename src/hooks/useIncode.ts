@@ -3,11 +3,55 @@ import { streamIncode, Message, GenerateOptions } from '../lib/ai';
 import toast from 'react-hot-toast';
 
 export function useIncode() {
-  const [history, setHistory] = useState<Message[]>([]);
+  const [history, setHistory] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('incode_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('incode_history', JSON.stringify(history));
+  }, [history]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
-  const [address, setAddress] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(() => {
+    return localStorage.getItem('incode_address');
+  });
   const [chain, setChain] = useState<'evm' | 'svm'>('evm');
+
+  useEffect(() => {
+    if (address) {
+      localStorage.setItem('incode_address', address);
+    } else {
+      localStorage.removeItem('incode_address');
+    }
+  }, [address]);
+
+  // Handle auto-reconnection for EVM/SVM
+  useEffect(() => {
+    const attemptReconnect = async () => {
+      const savedAddress = localStorage.getItem('incode_address');
+      if (!savedAddress) return;
+
+      try {
+        if (chain === 'evm' && window.ethereum) {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            setAddress(accounts[0]);
+          } else {
+            // If no accounts found despite saved address, clear it
+            setAddress(null);
+          }
+        }
+        // For SVM, most wallet providers like Phantom handle "connect on site load" 
+        // if previously authorized, but we'll trust the saved address for now
+        // or trigger a quiet connect if needed.
+      } catch (err) {
+        console.error("Reconnection failed", err);
+      }
+    };
+
+    attemptReconnect();
+  }, [chain]);
 
   const connectWallet = async () => {
     try {
