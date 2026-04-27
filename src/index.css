@@ -1,0 +1,143 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-terminal-bg: #8c8f85; 
+  --color-terminal-screen: #a1a49a;
+  --color-terminal-border: #2a2d26;
+  --color-terminal-text: #000000; /* Absolute black for maximum contrast */
+  --color-terminal-accent: #44ff00; /* Even sharper green */
+  --color-terminal-blue: #111111;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html {
+     font-size: 19px; /* One notch bigger */
+  }
+  
+  body {
+    @apply bg-zinc-950 text-terminal-text font-sans selection:bg-terminal-text selection:text-terminal-bg;
+  }
+
+  /* Retro Scrollbar */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-terminal-bg);
+    border-left: 1px solid var(--color-terminal-border);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-terminal-text);
+    border: 3px solid var(--color-terminal-bg);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333;
+  }
+
+  /* CRT Filter Effect */
+  .crt-container {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+    padding: 1rem;
+  }
+
+  .terminal-screen {
+    position: relative;
+    width: 100%;
+    max-width: 1600px;
+    min-height: 90vh;
+    background-color: var(--color-terminal-bg);
+    border: 12px solid #1a1a1a;
+    border-radius: 12px;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.2), 0 0 50px rgba(0,0,0,0.8);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  @media (min-width: 768px) {
+    .terminal-screen {
+      border-width: 24px;
+      border-radius: 40px;
+    }
+  }
+
+  .terminal-screen::before {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+    background-size: 100% 3px, 3px 100%;
+    pointer-events: none;
+    z-index: 200;
+    opacity: 0.8;
+  }
+
+  .grain {
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+    opacity: 0.15;
+    mix-blend-mode: multiply;
+    z-index: 199;
+  }
+
+  .scanline {
+    width: 100%;
+    height: 100px;
+    z-index: 201;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+    opacity: 0.1;
+    position: absolute;
+    bottom: 100%;
+    animation: scanline 10s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes scanline {
+    0% { bottom: 100%; }
+    100% { bottom: -100%; }
+  }
+}
+
+@layer components {
+  .terminal-panel {
+    @apply border border-terminal-border/30 bg-terminal-text/5;
+  }
+  
+  .terminal-btn {
+    @apply px-4 py-2 bg-terminal-text text-terminal-bg font-mono text-xs font-bold transition-all active:scale-95 hover:bg-terminal-text/80;
+  }
+
+  .enter-btn {
+    @apply bg-terminal-accent text-terminal-text font-black px-12 py-3 rounded-lg text-lg shadow-lg hover:brightness-110 active:scale-95 transition-all;
+  }
+
+  .mono-label {
+    @apply font-mono text-[9px] uppercase tracking-tighter opacity-70;
+  }
+}

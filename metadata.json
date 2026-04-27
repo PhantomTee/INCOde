@@ -1,0 +1,6 @@
+{
+  "name": "INCOde",
+  "description": "AI-powered smart contract code generator exclusively for Inco's Confidentiality Layer. Powered by Gemini 2.0 Flash.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["AI Code Generation", "Smart Contract Development", "Confidential Computing"]
+}
