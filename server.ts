@@ -20,10 +20,13 @@ async function startServer() {
   app.post("/api/generate", async (req, res) => {
     const { prompt, chain, history, options } = req.body;
     
+    console.log(`[GENERATE] Request received. Chain: ${chain}, History: ${history.length} msgs`);
+
     // Strictly use the new key provided by the user (shuaibthalhat54@gmail.com)
     const apiKey = process.env.GEMINIAPI_KEY1;
 
     if (!apiKey) {
+      console.error("[GENERATE] Error: GEMINIAPI_KEY1 is missing.");
       return res.status(500).json({ error: "GEMINIAPI_KEY1 is not configured in the project settings." });
     }
 
@@ -33,7 +36,7 @@ async function startServer() {
 
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-1.5-flash",
         systemInstruction: `You are INCODE, an expert AI specialized in Confidential Computing for Inco Network.
 Target: ${chain === "evm" ? "EVM (Solidity ^0.8.28)" : "SVM (Rust/Anchor)"}
 

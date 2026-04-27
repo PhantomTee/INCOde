@@ -69,10 +69,9 @@ export default function App() {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (isGenerating || !prompt.trim()) return;
-    
-    if (quotaRemaining <= 0 && !heuristApiKey) {
-      toast.error("FREE QUOTA EXHAUSTED. PLEASE ENTER HEURIST API KEY IN SETTINGS.");
-      setIsSettingsOpen(true);
+
+    if (!address) {
+      toast.error("PROTOCOL_ERROR: WALLET_NOT_CONNECTED. PLEASE INITIALIZE NODE.");
       return;
     }
     
@@ -223,18 +222,33 @@ export default function App() {
                 )}
              </div>
 
-             <div className="mt-4 px-4 md:px-12 pb-6">
+             <div className="mt-4 px-4 md:px-12 pb-6 relative">
+                {!address && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-[2px] rounded-xl mb-6 mx-4 md:mx-12">
+                    <div className="flex flex-col items-center gap-2 p-6 border-2 border-terminal-accent/40 bg-terminal-bg/90 shadow-[0_0_20px_rgba(85,255,0,0.2)] rounded-lg">
+                      <ShieldAlert className="w-8 h-8 text-terminal-accent animate-pulse" />
+                      <span className="mono-label text-terminal-accent font-black tracking-widest">ACCESS_DENIED: INITIALIZE_NODE_FIRST</span>
+                      <button 
+                        onClick={connectWallet}
+                        className="mt-2 px-4 py-2 bg-terminal-accent text-terminal-bg font-black text-xs uppercase hover:invert transition-all"
+                      >
+                        CONNECT_WALLET.EXE
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="relative">
                   <textarea 
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="ENTER_PROMPT_HERE // SYSTEM_LISTENING"
-                    className="w-full bg-terminal-text/10 border-2 border-terminal-text/20 p-6 md:p-8 h-32 md:h-40 focus:outline-none focus:border-terminal-text/40 placeholder:text-terminal-text/20 uppercase font-bold text-sm md:text-lg rounded-xl transition-all"
+                    disabled={!address || isGenerating}
+                    placeholder={address ? "ENTER_PROMPT_HERE // SYSTEM_LISTENING" : "CONNECTION_REQUIRED..."}
+                    className={`w-full bg-terminal-text/10 border-2 border-terminal-text/20 p-6 md:p-8 h-32 md:h-40 focus:outline-none focus:border-terminal-text/40 placeholder:text-terminal-text/20 uppercase font-bold text-sm md:text-lg rounded-xl transition-all ${!address ? 'opacity-30' : ''}`}
                   />
                   <div className="absolute right-6 bottom-6 flex items-center gap-4">
                     <span className="mono-label text-[8px] hidden md:block">CMD+ENTER to TRANSMIT</span>
-                    <button className="opacity-30 hover:opacity-100 transition-opacity">
+                    <button className="opacity-30 hover:opacity-100 transition-opacity" disabled={!address || isGenerating}>
                       <Zap className="w-5 h-5" />
                     </button>
                   </div>
