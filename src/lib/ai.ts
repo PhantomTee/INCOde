@@ -73,12 +73,13 @@ export async function* streamIncode(options: GenerateOptions) {
 
     if (!response.ok) {
       let errorMessage = "Failed to generate code.";
+      const clonedResponse = response.clone();
       try {
         const error = await response.json();
         errorMessage = error.message || error.error || errorMessage;
       } catch (e) {
-        // Fallback for non-JSON error responses
-        const text = await response.text();
+        // Fallback for non-JSON error responses using the cloned response
+        const text = await clonedResponse.text();
         errorMessage = text || errorMessage;
       }
       throw new Error(errorMessage);
