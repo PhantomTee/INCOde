@@ -72,7 +72,7 @@ export async function* streamIncode(options: GenerateOptions) {
     });
 
     if (!response.ok) {
-      let errorMessage = "Failed to generate code.";
+      let errorMessage = "SERVER_REJECTED_TRANSMISSION";
       const clonedResponse = response.clone();
       try {
         const error = await response.json();
@@ -82,7 +82,7 @@ export async function* streamIncode(options: GenerateOptions) {
         const text = await clonedResponse.text();
         errorMessage = text || errorMessage;
       }
-      throw new Error(errorMessage);
+      throw new Error(`STATUS_${response.status}: ${errorMessage}`);
     }
 
     const reader = response.body?.getReader();
