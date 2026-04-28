@@ -3,6 +3,7 @@ import { INCO_CONTEXT } from "./constants";
 export interface Message {
   role: "user" | "model" | "assistant";
   content: string;
+  timestamp?: string;
 }
 
 export interface GenerateOptions {
@@ -13,6 +14,11 @@ export interface GenerateOptions {
   includeNatspec: boolean;
   strictMode: boolean;
   history: Message[];
+  modelId?: string;
+  variables?: {
+    contractName?: string;
+    ownerAddress?: string;
+  };
   heuristApiKey?: string;
 }
 
@@ -56,6 +62,7 @@ Always preserve the specific formatting headers.
 
 export async function* streamIncode(options: GenerateOptions) {
   try {
+    console.log("[AI_SERVICE] Fetching /api/generate...");
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: {
@@ -65,8 +72,16 @@ export async function* streamIncode(options: GenerateOptions) {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to generate code.");
+      let errorMessage = "Failed to generate code.";
+      try {
+        const error = await response.json();
+        errorMessage = error.message || error.error || errorMessage;
+      } catch (e) {
+        // Fallback for non-JSON error responses
+        const text = await response.text();
+        errorMessage = text || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
 
     const reader = response.body?.getReader();

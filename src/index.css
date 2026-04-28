@@ -5,12 +5,44 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-terminal-bg: #8c8f85; 
-  --color-terminal-screen: #a1a49a;
-  --color-terminal-border: #2a2d26;
-  --color-terminal-text: #000000; /* Absolute black for maximum contrast */
-  --color-terminal-accent: #44ff00; /* Even sharper green */
+  --color-terminal-bg: var(--bg-color, #8c8f85);
+  --color-terminal-screen: var(--screen-color, #a1a49a);
+  --color-terminal-border: var(--border-color, #2a2d26);
+  --color-terminal-text: var(--text-color, #000000);
+  --color-terminal-accent: var(--accent-color, #44ff00);
   --color-terminal-blue: #111111;
+}
+
+:root {
+  --bg-color: #8c8f85;
+  --screen-color: #a1a49a;
+  --border-color: #2a2d26;
+  --text-color: #000000;
+  --accent-color: #44ff00;
+}
+
+.theme-matrix {
+  --bg-color: #020400;
+  --screen-color: #051000;
+  --border-color: #00ff41;
+  --text-color: #00ff41;
+  --accent-color: #b4ff00;
+}
+
+.theme-amber {
+  --bg-color: #0d0a00;
+  --screen-color: #1a1400;
+  --border-color: #ffb400;
+  --text-color: #ffb400;
+  --accent-color: #ffea00;
+}
+
+.theme-cyber {
+  --bg-color: #000c0d;
+  --screen-color: #001a1c;
+  --border-color: #00f2ff;
+  --text-color: #00f2ff;
+  --accent-color: #00ccff;
 }
 
 @theme {

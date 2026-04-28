@@ -5,7 +5,7 @@ import { Message } from '../lib/ai';
 interface HistoryPanelProps {
   history: Message[];
   onClear: () => void;
-  onSelect: (msg: Message) => void;
+  onSelect: (index: number) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -13,7 +13,9 @@ interface HistoryPanelProps {
 export function HistoryPanel({ history, onClear, onSelect, isOpen, onClose }: HistoryPanelProps) {
   if (!isOpen) return null;
 
-  const modelResponses = history.filter(m => m.role === 'model');
+  const modelResponses = history
+    .map((m, index) => ({ ...m, index }))
+    .filter(m => m.role === 'model');
 
   return (
     <div className="fixed inset-0 z-[110] flex justify-end">
@@ -38,11 +40,11 @@ export function HistoryPanel({ history, onClear, onSelect, isOpen, onClose }: Hi
               <p className="mono-label text-[10px] uppercase">No previous transmissions detected in local buffer</p>
             </div>
           ) : (
-            modelResponses.slice().reverse().map((m, i) => (
+            modelResponses.slice().reverse().map((item, i) => (
               <button 
                 key={i}
                 onClick={() => {
-                  onSelect(m);
+                  onSelect(item.index);
                   onClose();
                 }}
                 className="w-full text-left p-4 border border-terminal-text/10 bg-black/20 hover:border-terminal-accent/30 hover:bg-terminal-accent/5 transition-all rounded-xl group"
@@ -52,7 +54,7 @@ export function HistoryPanel({ history, onClear, onSelect, isOpen, onClose }: Hi
                   <ChevronRight className="w-3 h-3 opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                 </div>
                 <p className="text-xs font-mono line-clamp-3 opacity-60 group-hover:opacity-100 italic transition-opacity">
-                  {m.content.slice(0, 150)}...
+                  {item.content.slice(0, 150)}...
                 </p>
               </button>
             ))

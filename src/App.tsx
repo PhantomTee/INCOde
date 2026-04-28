@@ -32,7 +32,11 @@ export default function App() {
     options,
     setOptions,
     generate,
-    clearHistory
+    selectedMessageIndex,
+    setSelectedMessageIndex,
+    clearHistory,
+    modelId,
+    setModelId
   } = useIncode();
 
   const [prompt, setPrompt] = useState('');
@@ -98,7 +102,7 @@ export default function App() {
         {/* Top bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 md:p-8 pb-2 gap-4">
           <div className="space-y-1">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">INCODE</h1>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">INCOde</h1>
             <p className="mono-label tracking-[0.3em] text-[10px] md:text-sm">PROJECT // UNLEASH_SYSTEM</p>
           </div>
 
@@ -109,6 +113,16 @@ export default function App() {
 
           <div className="flex flex-col items-end gap-2">
              <div className="flex items-center gap-3">
+                <div className="flex bg-terminal-text/5 border border-terminal-text/10 rounded-full p-1 mr-2 scale-90 md:scale-100 origin-right">
+                  <button 
+                    onClick={() => { setChain('evm'); if(address) disconnectWallet(); }}
+                    className={`px-3 py-1 text-[8px] font-black rounded-full transition-all ${chain === 'evm' ? 'bg-terminal-text text-terminal-bg' : 'text-terminal-text opacity-40'}`}
+                  >EVM</button>
+                  <button 
+                    onClick={() => { setChain('svm'); if(address) disconnectWallet(); }}
+                    className={`px-3 py-1 text-[8px] font-black rounded-full transition-all ${chain === 'svm' ? 'bg-terminal-text text-terminal-bg' : 'text-terminal-text opacity-40'}`}
+                  >SVM</button>
+                </div>
                 <span className="mono-label text-[10px]">{time.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })} UTC</span>
                 <span className="mono-label text-[10px] text-terminal-accent">INCO_LATEST_V.2.1</span>
              </div>
@@ -163,38 +177,6 @@ export default function App() {
 
         {/* Content Area */}
         <main className="flex-1 flex flex-col xl:flex-row gap-6 px-4 md:px-8 overflow-hidden py-4">
-          {/* Left Panel: Blueprints */}
-          <section className="hidden xl:flex flex-col gap-4 w-64 pt-2">
-             <div className="terminal-panel flex-1 border-terminal-border/20 p-5 bg-terminal-text/5 rounded-xl">
-                <p className="mono-label text-[11px] mb-6 font-black">AUTH.INCODE_CORE</p>
-                <div className="w-full aspect-square border-2 border-terminal-text/10 relative overflow-hidden bg-terminal-screen/20">
-                  {/* Tactical Graphic Mockup */}
-                  <div className="absolute top-4 left-4 w-31/4 h-3/4 border border-terminal-text/20 flex items-center justify-center">
-                     <div className="w-24 h-36 bg-terminal-text/15 transform -skew-x-12 rotate-12 flex items-center justify-center font-black text-4xl opacity-10">Z</div>
-                     <div className="absolute inset-x-0 bottom-4 flex justify-center">
-                        <span className="text-[14px] font-mono font-bold tracking-tighter bg-terminal-text text-terminal-bg px-2">NODE_ID:{address ? address.slice(-6).toUpperCase() : 'N/A'}</span>
-                     </div>
-                  </div>
-                </div>
-                <p className="mono-label mt-6 leading-tight opacity-100 font-bold">AGENT_STRUCTURE_V.4.2</p>
-                <p className="mono-label text-[8px] mt-2 opacity-50">LATEST_SCAN_DETECTED // NO_THREATS</p>
-             </div>
-
-             <div className="terminal-panel h-1/4 border-terminal-border/20 p-4 font-mono text-[10px] leading-relaxed opacity-80 bg-terminal-text/5 rounded-xl overflow-hidden">
-                <code className="block text-terminal-text">
-                  init_node(auth_key):<br/>
-                  &nbsp;&nbsp;verify_attestation(auth_key)<br/>
-                  &nbsp;&nbsp;sync_with_inco_lightning()<br/>
-                  <br/>
-                  generate_contract(prompt):<br/>
-                  &nbsp;&nbsp;call_gemini_flash_2_0()<br/>
-                  &nbsp;&nbsp;inject_inco_primitives()<br/>
-                  <br/>
-                  output_buffer.stream()
-                </code>
-             </div>
-          </section>
-
           {/* Center Column: Generative Area */}
           <section className="flex-1 flex flex-col border-l border-r border-terminal-border/10 bg-terminal-screen/5 rounded-xl pt-4">
              <div className="flex-1 flex flex-col items-center pt-10 md:pt-16">
@@ -217,7 +199,12 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="w-full h-full flex flex-col overflow-hidden px-4 md:px-8">
-                    <ChatLog history={history} currentResponse={currentResponse} isGenerating={isGenerating} />
+                    <ChatLog 
+                      history={history} 
+                      currentResponse={currentResponse} 
+                      isGenerating={isGenerating} 
+                      onSelect={(index) => setSelectedMessageIndex(index)}
+                    />
                   </div>
                 )}
              </div>
@@ -275,7 +262,11 @@ export default function App() {
                    </div>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <CodePanel content={history.slice().reverse().find(m => m.role === 'model')?.content || currentResponse} isLoading={isGenerating} chain={chain} />
+                  <CodePanel 
+                    content={selectedMessageIndex !== null ? history[selectedMessageIndex].content : (history.slice().reverse().find(m => m.role === 'model')?.content || currentResponse)} 
+                    isLoading={isGenerating} 
+                    chain={chain} 
+                  />
                 </div>
              </div>
           </section>
@@ -299,7 +290,7 @@ export default function App() {
            </div>
 
            <div className="flex flex-col sm:flex-row items-center gap-6 w-full md:w-auto">
-              <div className="flex flex-col items-center md:items-end w-full sm:w-auto">
+              <div className="flex flex-col items-center md:items-end w-full sm:w-auto opacity-0 pointer-events-none absolute h-0 w-0">
                  <span className="mono-label text-[8px] mb-2 font-black uppercase text-terminal-text tracking-widest opacity-60">SELECT_PROTOCOL_CHAIN</span>
                  <div className="flex gap-2">
                    <button 
@@ -359,8 +350,8 @@ export default function App() {
           onClose={() => setIsHistoryOpen(false)}
           history={history}
           onClear={clearHistory}
-          onSelect={(m) => {
-            // Scroll to code? The finding logic in CodePanel handles displaying it
+          onSelect={(index) => {
+            setSelectedMessageIndex(index);
             toast.success("RESTORED_LOG_ENTRY");
           }}
         />
@@ -381,15 +372,44 @@ export default function App() {
               </div>
 
               <div className="space-y-8">
-                <div>
-                  <label className="mono-label text-[10px] block mb-3 opacity-60 uppercase font-black">AI_PROVIDER: SERVER_SIDE_GATEWAY</label>
-                  <p className="text-[9px] mb-4 opacity-40 uppercase leading-tight italic">
-                    The system is now using project-wide API keys for generation. Secure inference is active.
-                  </p>
+                <div className="space-y-4">
+                  <label className="mono-label text-[10px] block opacity-60 uppercase font-black tracking-widest">protocol_chain</label>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => { setChain('evm'); if(address) disconnectWallet(); }} 
+                      className={`flex-1 px-5 py-3 border-2 font-black text-xs uppercase transition-all rounded-xl ${chain === 'evm' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20 hover:bg-terminal-text/5'}`}
+                    >
+                      EVM (Solidity)
+                    </button>
+                    <button 
+                      onClick={() => { setChain('svm'); if(address) disconnectWallet(); }} 
+                      className={`flex-1 px-5 py-3 border-2 font-black text-xs uppercase transition-all rounded-xl ${chain === 'svm' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20 hover:bg-terminal-text/5'}`}
+                    >
+                      SVM (Rust)
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
-                  <label className="mono-label text-[10px] block opacity-60 uppercase font-black">Generation_Parameters</label>
+                  <label className="mono-label text-[10px] block opacity-60 uppercase font-black tracking-widest">Model_Intelligence</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => setModelId('llama-3.3-70b-versatile')} 
+                      className={`px-4 py-2 border-2 text-[10px] font-black uppercase rounded-lg ${modelId === 'llama-3.3-70b-versatile' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20'}`}
+                    >
+                      ROBUST GEN
+                    </button>
+                    <button 
+                      onClick={() => setModelId('llama3-8b-8192')} 
+                      className={`px-4 py-2 border-2 text-[10px] font-black uppercase rounded-lg ${modelId === 'llama3-8b-8192' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20'}`}
+                    >
+                      FAST GEN
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="mono-label text-[10px] block opacity-60 uppercase font-black tracking-widest">generation_parameters</label>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { key: 'includeTests', label: 'GENERATE_TESTS' },

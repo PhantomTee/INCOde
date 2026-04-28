@@ -14,42 +14,42 @@ const TEMPLATES: Template[] = [
   {
     id: 'conf-erc20',
     name: 'Confidential Token',
-    description: 'ERC20 with encrypted balances and transfers using Inco FHE.',
+    description: 'ERC20 with encrypted balances and transfers. Uses the Multiplexer Pattern for conditional transfers.',
     icon: <Globe className="w-4 h-4" />,
     chain: 'evm',
-    prompt: 'Generate an ERC20 confidential token using Inco @inco/lightning/Lib.sol. Include encrypted balances (euint32), transfer function with re-encryption for recipients, and minting functionality only for owner.'
+    prompt: 'Generate an ERC20 confidential token using Inco. Implement a transfer function that uses e.select to handle cases where the sender has insufficient balance, avoiding reverts. Ensure proper fee handling with inco.getFee() and use allow/allowThis for state updates.'
   },
   {
-    id: 'blind-auction',
-    name: 'Sealed Bid Auction',
-    description: 'Fully on-chain blind auction where bids are hidden until reveal or end.',
+    id: 'private-auction',
+    name: 'Private Sealed Bid',
+    description: 'Highest bidder is tracked in secret. Only owner can reveal the winner.',
     icon: <Lock className="w-4 h-4" />,
     chain: 'evm',
-    prompt: 'Build a sealed-bid auction contract. Users submit euint128 bids. The contract should compare bids using FHE (Lib.gt) without revealing them. Only the winner ID is revealed at the end.'
+    prompt: 'Build a sealed-bid auction. Bidders submit encrypted bids (euint256). The contract updates the current highest bid handle using e.max and tracks the highest bidder using e.select on addresses. No plaintext comparisons allowed.'
   },
   {
-    id: 'private-voting',
-    name: 'Private DAO Voting',
-    description: 'Vote tallies are encrypted. Only the final result is decrypted.',
+    id: 'encrypted-lottery',
+    name: 'Secret Number Lottery',
+    description: 'A lottery where the winning number is generated on-chain using FHE randomness.',
+    icon: <Zap className="w-4 h-4" />,
+    chain: 'evm',
+    prompt: 'Create a lottery contract where the winning number is generated via e.randBounded(). Users buy tickets with encrypted numbers. The winner is determined by comparing ticket numbers to the secret winning number via e.eq.'
+  },
+  {
+    id: 'private-dao',
+    name: 'Stealth DAO',
+    description: 'Confidential voting where vote tallies are never revealed in plaintext.',
     icon: <Vote className="w-4 h-4" />,
     chain: 'evm',
-    prompt: 'Create a private voting system. Use euint32 for vote counts. Each vote increments an encrypted counter. Provide a function to decrypt the final tally after a certain block height.'
+    prompt: 'Develop a DAO contract with confidential voting. Votes are encrypted increments to an euint balance mapping. Use e.select for vote weight logic. Decryption should only be possible after the voting period ends via e.reveal.'
   },
   {
-    id: 'ident-shield',
-    name: 'Identity Shield',
-    description: 'Private identity verification with zero-knowledge-like privacy via FHE.',
+    id: 'private-identity',
+    name: 'Confidential Identity',
+    description: 'Verified attributes (e.g. proof of age) without revealing the underlying data.',
     icon: <Shield className="w-4 h-4" />,
     chain: 'evm',
-    prompt: 'Generate an Identity verification contract. Users store encrypted attributes (e.g., age > 18). Verifiers can check encrypted conditions without seeing the actual values.'
-  },
-  {
-    id: 'svm-escrow',
-    name: 'Encrypted Escrow',
-    description: 'SVM escrow with confidential release conditions.',
-    icon: <Zap className="w-4 h-4" />,
-    chain: 'svm',
-    prompt: 'Build a Solana Anchor contract using Inco SVM bindings for a confidential escrow. The release condition is an encrypted boolean state.'
+    prompt: 'Generate an identity verification contract. Store encrypted age (euint8). Provide a function that returns an encrypted boolean (ebool) indicating if the user is 18+ without revealing the age.'
   }
 ];
 

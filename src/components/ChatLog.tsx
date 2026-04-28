@@ -8,31 +8,36 @@ interface ChatLogProps {
   history: Message[];
   currentResponse: string;
   isGenerating: boolean;
+  onSelect?: (index: number) => void;
 }
 
-export const ChatLog = ({ history, currentResponse, isGenerating }: ChatLogProps) => {
+export const ChatLog = ({ history, currentResponse, isGenerating, onSelect }: ChatLogProps) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
       {history.map((msg, i) => (
-        <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+        <div 
+          key={i} 
+          onClick={() => msg.role !== 'user' && onSelect?.(i)}
+          className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} ${msg.role !== 'user' ? 'cursor-pointer hover:scale-[1.01] transition-transform' : ''}`}
+        >
           <div className="flex items-center gap-2 mb-1">
             <span className="mono-label tracking-widest">{msg.role === 'user' ? 'USER' : 'INCODE'}</span>
             <div className="w-1 h-1 bg-terminal-text/30 rounded-full" />
-            <span className="mono-label">11:04 AM</span>
+            <span className="mono-label">{msg.timestamp || '00:00'}</span>
           </div>
           
           <div className={`p-4 border-2 ${
             msg.role === 'user' 
               ? 'bg-terminal-text text-terminal-bg border-terminal-text rounded-2xl rounded-tr-none shadow-lg' 
               : 'bg-terminal-screen/30 border-terminal-border/40 text-terminal-text rounded-2xl rounded-tl-none shadow-xl'
-          } max-w-[90%]`}>
-            {msg.role === 'model' && (
+          } max-w-[90%] overflow-hidden`}>
+            {(msg.role === 'model' || msg.role === 'assistant') && (
               <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-terminal-border/20">
                 <div className="w-6 h-6 bg-terminal-text text-terminal-bg rounded flex items-center justify-center text-[10px] font-black">AI</div>
-                <span className="text-[12px] font-black uppercase tracking-widest opacity-80">INCODE_CORE_ANALYSIS</span>
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Encrypted_Intelligence</span>
               </div>
             )}
-            <div className="markdown-body text-sm md:text-base prose-zinc font-medium leading-relaxed">
+            <div className="markdown-body text-sm md:text-base prose-zinc font-medium leading-relaxed overflow-x-auto break-words">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {msg.content}
               </ReactMarkdown>

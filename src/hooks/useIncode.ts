@@ -13,10 +13,12 @@ export function useIncode() {
   }, [history]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentResponse, setCurrentResponse] = useState('');
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
   const [address, setAddress] = useState<string | null>(() => {
     return localStorage.getItem('incode_address');
   });
   const [chain, setChain] = useState<'evm' | 'svm'>('evm');
+  const [modelId, setModelId] = useState('llama-3.3-70b-versatile');
 
   useEffect(() => {
     if (address) {
@@ -101,10 +103,27 @@ export function useIncode() {
 
     setIsGenerating(true);
     setCurrentResponse('');
+    setSelectedMessageIndex(null);
     
-    const userMessage: Message = { role: 'user', content: prompt };
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Simple caching mechanism
+    const cacheKey = `incode_cache_${chain}_${prompt.toLowerCase().trim()}`;
+    const cachedResponse = localStorage.getItem(cacheKey);
+    
+    const userMessage: Message = { role: 'user', content: prompt, timestamp };
     const newHistory = [...history, userMessage];
     setHistory(newHistory);
+
+    if (cachedResponse && !history.length) {
+       // Optional: Add artificial delay if feeling fancy, but let's be fast
+       const modelTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+       setTimeout(() => {
+         setHistory(prev => [...prev, { role: 'assistant', content: cachedResponse, timestamp: modelTimestamp }]);
+         setIsGenerating(false);
+       }, 500);
+       return;
+    }
 
     try {
       const stream = streamIncode({
@@ -112,6 +131,7 @@ export function useIncode() {
         chain,
         ...options,
         history,
+        modelId,
       });
 
       let fullText = '';
@@ -120,8 +140,12 @@ export function useIncode() {
         setCurrentResponse(fullText);
       }
 
-      setHistory(prev => [...prev, { role: 'model', content: fullText }]);
+      const modelTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setHistory(prev => [...prev, { role: 'assistant', content: fullText, timestamp: modelTimestamp }]);
       setCurrentResponse('');
+      
+      // Save to cache
+      localStorage.setItem(cacheKey, fullText);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to generate code.");
@@ -142,7 +166,14 @@ export function useIncode() {
     options,
     setOptions,
     generate,
-    clearHistory: () => setHistory([]),
+    modelId,
+    setModelId,
+    selectedMessageIndex,
+    setSelectedMessageIndex,
+    clearHistory: () => {
+      setHistory([]);
+      setSelectedMessageIndex(null);
+    },
   };
 }
 
