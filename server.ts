@@ -1,8 +1,6 @@
 // server.ts
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from "url";
 import fs from "fs";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
@@ -10,8 +8,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const _cwd = process.cwd();
 
 const PORT = Number(process.env.PORT) || 3000;
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
@@ -42,8 +39,8 @@ function loadIncoDocs(): string {
   const candidates = [
     "./inco_context.txt",
     "./inco_context.md",
-    path.join(__dirname, "inco_context.txt"),
-    path.join(__dirname, "inco_context.md"),
+    path.join(_cwd, "inco_context.txt"),
+    path.join(_cwd, "inco_context.md"),
   ];
 
   for (const filePath of candidates) {
@@ -186,11 +183,11 @@ function getOpenRouterClient() {
 function sanitizeHistory(history: unknown[]) {
   if (!Array.isArray(history)) return [];
   return history
-    .filter((m: any) => m?.role && m?.content)
+    .filter((m: any) => m && m.role && m.content)
     .slice(-MAX_HISTORY_TURNS)
     .map((m: any) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content as string,
+      role: (m.role === "model" || m.role === "assistant") ? "assistant" : "user",
+      content: String(m.content),
     }));
 }
 
@@ -281,6 +278,7 @@ app.use("/api", apiRouter);
 // Vite middleware for development or fallback for production
 if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   (async () => {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
