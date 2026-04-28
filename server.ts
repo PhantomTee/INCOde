@@ -4,7 +4,8 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import OpenAI from "openai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { streamText } from "ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -13,32 +14,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
-const NVIDIA_NIM_BASE_URL = "https://integrate.api.nvidia.com/v1";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const MAX_PROMPT_LENGTH = 16000;
 const MAX_HISTORY_TURNS = 12;
-const MAX_OUTPUT_TOKENS = 8192;
 
 // ─────────────────────────────────────────────
 // MODEL CONFIG
 // ─────────────────────────────────────────────
 
 const MODEL_CONFIG = {
-  "deepseek-ai/deepseek-v3": {
-    label: "DeepSeek V3 (Fast & Balanced)",
-    tpm: 100000,
+  "deepseek/deepseek-chat": {
+    label: "DeepSeek V3",
     default: true,
-  },
-  "deepseek-ai/deepseek-r1": {
-    label: "DeepSeek R1 (Strong Reasoning)",
-    tpm: 64000,
-    default: false,
   },
 } as const;
 
 type AllowedModel = keyof typeof MODEL_CONFIG;
 const ALLOWED_MODELS = Object.keys(MODEL_CONFIG) as AllowedModel[];
-const DEFAULT_MODEL: AllowedModel = "deepseek-ai/deepseek-v3";
+const DEFAULT_MODEL: AllowedModel = "deepseek/deepseek-chat";
 
 // ─────────────────────────────────────────────
 // LOAD INCO DOCUMENTATION
@@ -110,37 +104,31 @@ function fitDocsToTokenBudget(
 // ─────────────────────────────────────────────
 
 const FHE_SYSTEM_PROMPT = `You are an elite Senior Web3 Smart Contract Architect and Inco Lightning FHE Specialist.
-
 Your #1 priority is writing secure, correct Inco contracts. You have ZERO tolerance for FHE mistakes.
 
 === ABSOLUTE FHE RULES (NEVER VIOLATE) ===
+NEVER branch on encrypted data
+Forbidden: if(), require(), revert() based on ebool or euint256.
+Never use .unwrap() on ebool for control flow.
 
-1. NEVER branch on encrypted data
-   - Forbidden: if(), require(), revert() based on ebool or euint256.
-   - Never use .unwrap() on ebool for control flow.
+ALWAYS use multiplexer pattern:
+ebool canDo = e.ge(balance, amount);
+euint256 actual = e.select(canDo, amount, e.asEuint256(0));
 
-2. ALWAYS use multiplexer pattern:
-   ebool canDo = e.ge(balance, amount);
-   euint256 actual = e.select(canDo, amount, e.asEuint256(0));
+NEW HANDLES REQUIRE IMMEDIATE e.allow()
+After every e.add, e.sub, e.select, e.newEuint256, e.asEuint256, you MUST call:
+e.allow(newHandle, address(this));
+e.allow(newHandle, user);   // if user needs decryption
 
-3. NEW HANDLES REQUIRE IMMEDIATE e.allow()
-   After every e.add, e.sub, e.select, e.newEuint256, e.asEuint256, you MUST call:
-   e.allow(newHandle, address(this));
-   e.allow(newHandle, user);   // if user needs decryption
-
-4. Never hardcode fees. Use inco.getFee() or let contract hold ETH.
-
-5. Never emit euint256 or ebool in events.
-
-6. Empty check: if (euint256.unwrap(balances[user]) == bytes32(0))
-
-7. Use Attestation Pattern for withdrawals. Never use e.reveal().
+Never hardcode fees. Use inco.getFee() or let contract hold ETH.
+Never emit euint256 or ebool in events.
+Empty check: if (euint256.unwrap(balances[user]) == bytes32(0))
+Use Attestation Pattern for withdrawals. Never use e.reveal().
 
 Always start with: using e for *;
 Use correct Inco imports.
 
 === OUTPUT FORMAT (STRICTLY FOLLOW) ===
-
 ## 📋 What I'm Building
 [Short summary]
 
@@ -167,48 +155,28 @@ Use correct Inco imports.
 
 If user request violates rules, correct them politely.`;
 
-const BASE_SYSTEM_PROMPT_TOKENS = estimateTokens(FHE_SYSTEM_PROMPT) + 60;
-
 // Build system prompt with docs
-function buildSystemPrompt(
-  model: AllowedModel,
-  chain: "evm" | "svm",
-  historyTokens: number,
-  promptTokens: number
-): { systemPrompt: string; docsTruncated: boolean } {
-  const chainSuffix = chain === "evm"
-    ? "\n\nTARGET CHAIN: EVM — Generate Solidity ^0.8.28"
-    : "\n\nTARGET CHAIN: SVM — Generate Rust with Anchor";
-
-  const { docs, truncated } = fitDocsToTokenBudget(model, BASE_SYSTEM_PROMPT_TOKENS, historyTokens, promptTokens);
-
-  const docsSection = docs
-    ? `\n\n${"=".repeat(60)}\nINCO DOCUMENTATION — USE AS YOUR SOLE REFERENCE:\n${"=".repeat(60)}\n${docs}`
-    : "\n\n[WARNING: Inco docs omitted due to token budget.]";
-
-  return {
-    systemPrompt: FHE_SYSTEM_PROMPT + docsSection + chainSuffix,
-    docsTruncated: truncated,
-  };
+function buildSystemPrompt(): string {
+  return FHE_SYSTEM_PROMPT;
 }
 
 // ─────────────────────────────────────────────
-// NVIDIA CLIENT
+// OPENROUTER CLIENT
 // ─────────────────────────────────────────────
 
-let nvidiaClient: OpenAI | null = null;
+let openrouterClient: ReturnType<typeof createOpenAI> | null = null;
 
-function getNvidiaClient(): OpenAI {
-  if (!nvidiaClient) {
-    const apiKey = process.env.NVIDIA_API_KEY;
-    if (!apiKey) throw new Error("NVIDIA_API_KEY is not set");
-    nvidiaClient = new OpenAI({
+function getOpenRouterClient() {
+  if (!openrouterClient) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+    openrouterClient = createOpenAI({
       apiKey,
-      baseURL: NVIDIA_NIM_BASE_URL,
+      baseURL: OPENROUTER_BASE_URL,
     });
-    console.log("[INCODE_SERVER] NVIDIA NIM client initialized");
+    console.log("[INCODE_SERVER] OpenRouter client initialized");
   }
-  return nvidiaClient;
+  return openrouterClient;
 }
 
 // ─────────────────────────────────────────────
@@ -232,116 +200,114 @@ function sanitizeHistory(history: unknown[]) {
 
 const app = express();
 
-async function startServer() {
-  app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "2mb" }));
 
-  app.use((req, res, next) => {
-    console.log(`[SERVER_LOG] ${req.method} ${req.url}`);
-    next();
+app.use((req, res, next) => {
+  console.log(`[SERVER_LOG] ${req.method} ${req.url}`);
+  next();
+});
+
+const apiRouter = express.Router();
+
+// Health Check
+apiRouter.get("/health", (_, res) => {
+  res.json({ status: "ok" });
+});
+
+// Models endpoint (critical for frontend)
+apiRouter.get("/models", (_, res) => {
+  res.json({
+    models: Object.keys(MODEL_CONFIG).map((id) => ({
+      id,
+      label: MODEL_CONFIG[id as AllowedModel].label,
+      default: MODEL_CONFIG[id as AllowedModel].default,
+    })),
   });
+});
 
-  const apiRouter = express.Router();
+// Generate endpoint
+apiRouter.post("/generate", async (req, res) => {
+  console.log("[INCODE_GATEWAY] Received generate request");
 
-  // Health Check
-  apiRouter.get("/health", (_, res) => {
-    res.json({ status: "ok" });
-  });
+  const { prompt, history = [] } = req.body;
 
-  // Models endpoint (critical for frontend)
-  apiRouter.get("/models", (_, res) => {
-    res.json({
-      models: Object.keys(MODEL_CONFIG).map((id) => ({
-        id,
-        label: MODEL_CONFIG[id as AllowedModel].label,
-        default: MODEL_CONFIG[id as AllowedModel].default,
-      })),
+  if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+    return res.status(400).json({ error: "INVALID_PROMPT", message: "Prompt is required" });
+  }
+
+  const safeHistory = sanitizeHistory(history);
+  const systemPrompt = buildSystemPrompt();
+
+  let openrouter;
+  try {
+    openrouter = getOpenRouterClient();
+  } catch (err) {
+    return res.status(500).json({ error: "OPENROUTER_API_KEY_MISSING", message: "OPENROUTER_API_KEY not configured" });
+  }
+
+  try {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Transfer-Encoding", "chunked");
+    res.setHeader("X-Model-Used", "deepseek/deepseek-chat");
+
+    const result = await streamText({
+      model: openrouter("deepseek/deepseek-chat"),
+      system: systemPrompt,
+      messages: [
+        ...safeHistory,
+        { role: "user", content: prompt.trim() },
+      ],
+      temperature: 0.1, // Low temperature for coding precision
     });
-  });
 
-  // Generate endpoint
-  apiRouter.post("/generate", async (req, res) => {
-    console.log("[INCODE_GATEWAY] Received generate request");
-
-    const { prompt, chain = "evm", history = [], modelId } = req.body;
-
-    if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
-      return res.status(400).json({ error: "INVALID_PROMPT", message: "Prompt is required" });
+    for await (const chunk of result.textStream) {
+      res.write(chunk);
     }
 
-    const safeModel: AllowedModel = ALLOWED_MODELS.includes(modelId) ? modelId : DEFAULT_MODEL;
-    const safeHistory = sanitizeHistory(history);
-    const historyTokens = estimateTokens(safeHistory.map(m => m.content).join(" "));
-    const promptTokens = estimateTokens(prompt);
-
-    const { systemPrompt, docsTruncated } = buildSystemPrompt(safeModel, chain, historyTokens, promptTokens);
-
-    let client: OpenAI;
-    try {
-      client = getNvidiaClient();
-    } catch (err) {
-      return res.status(500).json({ error: "NVIDIA_API_KEY_MISSING", message: "NVIDIA_API_KEY not configured" });
-    }
-
-    try {
-      res.setHeader("Content-Type", "text/plain; charset=utf-8");
-      res.setHeader("Transfer-Encoding", "chunked");
-      res.setHeader("X-Model-Used", safeModel);
-
-      const stream = await client.chat.completions.create({
-        model: safeModel,
-        stream: true,
-        temperature: 0.2,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...safeHistory,
-          { role: "user", content: prompt.trim() },
-        ],
-      });
-
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content || "";
-        if (text) res.write(text);
-      }
-
+    res.end();
+  } catch (error: any) {
+    console.error("[OPENROUTER_ERROR]", error?.message);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "GENERATION_FAILED", message: error.message });
+    } else {
+      res.write(`\n\n[[ERROR]] ${error.message}`);
       res.end();
-    } catch (error: any) {
-      console.error("[NVIDIA_NIM_ERROR]", error?.message);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "GENERATION_FAILED", message: error.message });
-      } else {
-        res.write(`\n\n[[ERROR]] ${error.message}`);
-        res.end();
-      }
     }
-  });
+  }
+});
 
-  app.use("/api", apiRouter);
+app.use("/api", apiRouter);
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+// Vite middleware for development or fallback for production
+if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+  (async () => {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ INCOde Server running on http://0.0.0.0:${PORT} (Dev)`);
+      console.log(`    Default Model : deepseek/deepseek-chat`);
+      console.log(`    OpenRouter Key: ${process.env.OPENROUTER_API_KEY ? "✅ Set" : "❌ Missing"}`);
+    });
+  })();
+} else {
+  // Production
+  if (!process.env.VERCEL) {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (_, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
-  }
 
-  if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`✅ INCOde Server running on http://0.0.0.0:${PORT}`);
-      console.log(`    Default Model : ${DEFAULT_MODEL}`);
-      console.log(`    NVIDIA Key    : ${process.env.NVIDIA_API_KEY ? "✅ Set" : "❌ Missing"}`);
+      console.log(`✅ INCOde Server running on http://0.0.0.0:${PORT} (Prod)`);
+      console.log(`    Default Model : deepseek/deepseek-chat`);
+      console.log(`    OpenRouter Key: ${process.env.OPENROUTER_API_KEY ? "✅ Set" : "❌ Missing"}`);
     });
   }
 }
-
-startServer();
 
 export default app;
