@@ -15,7 +15,7 @@ export function HistoryPanel({ history, onClear, onSelect, isOpen, onClose }: Hi
 
   const modelResponses = history
     .map((m, index) => ({ ...m, index }))
-    .filter(m => m.role === 'model');
+    .filter(m => m.role === 'assistant' || m.role === 'model');
 
   return (
     <div className="fixed inset-0 z-[110] flex justify-end">

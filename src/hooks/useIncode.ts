@@ -18,7 +18,7 @@ export function useIncode() {
     return localStorage.getItem('incode_address');
   });
   const [chain, setChain] = useState<'evm' | 'svm'>('evm');
-  const [modelId, setModelId] = useState('llama-3.3-70b-versatile');
+  const [modelId, setModelId] = useState('deepseek-ai/deepseek-v4-pro');
 
   useEffect(() => {
     if (address) {
@@ -172,7 +172,10 @@ export function useIncode() {
     setSelectedMessageIndex,
     clearHistory: () => {
       setHistory([]);
+      setCurrentResponse('');
       setSelectedMessageIndex(null);
+      setIsGenerating(false);
+      localStorage.removeItem('incode_history');
     },
   };
 }

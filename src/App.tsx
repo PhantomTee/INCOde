@@ -7,6 +7,7 @@ import {
   Send, 
   Zap, 
   History, 
+  Trash2,
   Settings as SettingsIcon,
   ChevronRight,
   ShieldAlert,
@@ -42,7 +43,15 @@ export default function App() {
   const [prompt, setPrompt] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/models')
+      .then(res => res.json())
+      .then(data => setAvailableModels(data.models))
+      .catch(err => console.error("Failed to load models", err));
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -263,7 +272,7 @@ export default function App() {
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <CodePanel 
-                    content={selectedMessageIndex !== null ? history[selectedMessageIndex].content : (history.slice().reverse().find(m => m.role === 'model')?.content || currentResponse)} 
+                    content={selectedMessageIndex !== null ? history[selectedMessageIndex].content : (history.slice().reverse().find(m => m.role === 'assistant' || m.role === 'model')?.content || currentResponse)} 
                     isLoading={isGenerating} 
                     chain={chain} 
                   />
@@ -333,11 +342,25 @@ export default function App() {
                 </button>
                 
                 <button 
+                  onClick={() => {
+                    if (confirm('CLEAR_ALL_TRANSMISSION_DATA?')) {
+                      clearHistory();
+                      setPrompt('');
+                      toast.success("BUFFER_PURGED");
+                    }
+                  }}
+                  className="p-4 border-2 border-terminal-text/20 hover:border-red-900/40 hover:bg-red-900/10 hover:text-red-700 transition-all rounded-2xl group"
+                  title="Clear Current Session"
+                >
+                   <Trash2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                </button>
+
+                <button 
                   onClick={() => setIsHistoryOpen(true)}
                   className="p-4 border-2 border-terminal-text/20 hover:bg-terminal-text hover:text-terminal-bg transition-all rounded-2xl group relative"
                 >
                    <History className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                   {history.filter(m => m.role === 'model').length > 0 && (
+                   {history.filter(m => m.role === 'assistant' || m.role === 'model').length > 0 && (
                      <div className="absolute top-2 right-2 w-2 h-2 bg-terminal-accent rounded-full animate-ping" />
                    )}
                 </button>
@@ -392,19 +415,28 @@ export default function App() {
 
                 <div className="space-y-4">
                   <label className="mono-label text-[10px] block opacity-60 uppercase font-black tracking-widest">Model_Intelligence</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => setModelId('llama-3.3-70b-versatile')} 
-                      className={`px-4 py-2 border-2 text-[10px] font-black uppercase rounded-lg ${modelId === 'llama-3.3-70b-versatile' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20'}`}
-                    >
-                      ROBUST GEN
-                    </button>
-                    <button 
-                      onClick={() => setModelId('llama3-8b-8192')} 
-                      className={`px-4 py-2 border-2 text-[10px] font-black uppercase rounded-lg ${modelId === 'llama3-8b-8192' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20'}`}
-                    >
-                      FAST GEN
-                    </button>
+                  <div className="grid grid-cols-1 gap-2">
+                    {availableModels.length > 0 ? (
+                      availableModels.map((m) => (
+                        <button 
+                          key={m.id}
+                          onClick={() => setModelId(m.id)} 
+                          className={`px-4 py-3 border-2 text-[10px] font-black uppercase rounded-lg transition-all flex flex-col items-start gap-1 ${modelId === m.id ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20 hover:bg-terminal-text/5 text-terminal-text'}`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span>{m.label.split('(')[0]}</span>
+                            {m.provider === 'nvidia' && <span className="bg-terminal-accent/20 text-terminal-accent px-1.5 py-0.5 rounded text-[8px]">PRO_GRADE</span>}
+                          </div>
+                          <span className={`text-[8px] opacity-60 normal-case ${modelId === m.id ? 'text-terminal-bg' : 'text-terminal-text'}`}>
+                            {m.label.includes('(') ? '(' + m.label.split('(')[1] : ''}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-[10px] opacity-40 font-mono italic p-4 text-center border-2 border-dashed border-terminal-text/10 rounded-lg">
+                        LOADING_AI_CORES...
+                      </div>
+                    )}
                   </div>
                 </div>
 

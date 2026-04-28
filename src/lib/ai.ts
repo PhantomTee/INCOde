@@ -72,14 +72,12 @@ export async function* streamIncode(options: GenerateOptions) {
     });
 
     if (!response.ok) {
+      const text = await response.text();
       let errorMessage = "SERVER_REJECTED_TRANSMISSION";
-      const clonedResponse = response.clone();
       try {
-        const error = await response.json();
+        const error = JSON.parse(text);
         errorMessage = error.message || error.error || errorMessage;
       } catch (e) {
-        // Fallback for non-JSON error responses using the cloned response
-        const text = await clonedResponse.text();
         errorMessage = text || errorMessage;
       }
       throw new Error(`STATUS_${response.status}: ${errorMessage}`);

@@ -1,6 +1,6 @@
 {
   "name": "INCOde",
-  "description": "AI-powered smart contract code generator exclusively for Inco's Confidentiality Layer. Powered by Groq Llama 3.3.",
+  "description": "AI-powered smart contract code generator exclusively for Inco's Confidentiality Layer. Powered by NVIDIA NIM & DeepSeek V3.",
   "requestFramePermissions": [],
   "majorCapabilities": ["AI Code Generation", "Smart Contract Development", "Confidential Computing"]
 }
