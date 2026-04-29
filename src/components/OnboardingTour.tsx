@@ -71,52 +71,52 @@ export const OnboardingTour = ({ onComplete, forceShow = false }: OnboardingTour
   const currentStep = steps[step];
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-500">
-      <div className="terminal-panel w-full max-w-lg border border-terminal-accent/30 bg-terminal-bg/95 p-6 md:p-10 rounded-2xl shadow-[0_0_50px_rgba(85,255,0,0.15)] relative overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 md:p-4 animate-in fade-in duration-500">
+      <div className="terminal-panel w-full max-w-[95vw] md:max-w-lg border border-terminal-accent/30 bg-terminal-bg/95 p-4 md:p-10 rounded-xl md:rounded-2xl shadow-[0_0_50px_rgba(56,189,248,0.15)] relative overflow-hidden flex flex-col max-h-[95vh]">
         <div className="grain pointer-events-none opacity-30" />
         <div className="scanline pointer-events-none opacity-20" />
         
         {/* Header */}
-        <div className="flex justify-between items-start mb-8 relative z-10 border-b border-terminal-text/20 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 border border-terminal-accent/30 bg-terminal-accent/5 rounded-lg">
-              {currentStep.icon}
+        <div className="flex justify-between items-start mb-4 md:mb-8 relative z-10 border-b border-terminal-text/20 pb-4">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 border border-terminal-accent/30 bg-terminal-accent/5 rounded-lg shrink-0">
+              {React.cloneElement(currentStep.icon, { className: "w-6 h-6 md:w-10 md:h-10 text-terminal-accent" + (currentStep.icon.props.className?.includes('animate-pulse') ? ' animate-pulse' : '') })}
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-terminal-accent shadow-terminal-accent/50 drop-shadow-sm">
+              <h2 className="text-base md:text-2xl font-black uppercase tracking-widest text-terminal-accent shadow-terminal-accent/50 drop-shadow-sm">
                 {currentStep.title}
               </h2>
-              <p className="mono-label text-[10px] md:text-xs uppercase opacity-70 tracking-widest mt-1">
+              <p className="mono-label text-[9px] md:text-xs uppercase opacity-70 tracking-widest mt-0.5 md:mt-1">
                 {currentStep.subtitle}
               </p>
             </div>
           </div>
           <button 
             onClick={dismissTour}
-            className="text-terminal-text/50 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-xl transition-all"
+            className="text-terminal-text/50 hover:text-red-500 p-1 md:p-2 hover:bg-red-500/10 rounded-xl transition-all shrink-0"
             title="Skip Tutorial"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex-1 min-h-[100px] flex items-center mb-10">
+        <div className="relative z-10 flex-1 min-h-[120px] md:min-h-[100px] flex items-center mb-6 md:mb-10 overflow-y-auto">
           <p className="text-sm md:text-base font-mono leading-relaxed text-terminal-text/90">
             {currentStep.content}
           </p>
         </div>
 
         {/* Footer & Controls */}
-        <div className="relative z-10 flex items-center justify-between border-t border-terminal-text/20 pt-6">
+        <div className="relative z-10 flex flex-col-reverse md:flex-row items-center justify-between border-t border-terminal-text/20 pt-4 md:pt-6 gap-4 md:gap-0">
           {/* Progress Indicators */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full md:w-auto justify-center md:justify-start">
             {steps.map((_, i) => (
               <div 
                 key={i} 
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${
                   i === step 
-                    ? 'bg-terminal-accent shadow-[0_0_8px_rgba(85,255,0,0.8)] scale-125' 
+                    ? 'bg-terminal-accent shadow-[0_0_8px_rgba(56,189,248,0.8)] scale-125' 
                     : i < step 
                       ? 'bg-terminal-accent/40' 
                       : 'bg-terminal-text/20'
@@ -125,23 +125,23 @@ export const OnboardingTour = ({ onComplete, forceShow = false }: OnboardingTour
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            {step > 0 && (
+          <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+            {step > 0 ? (
               <button 
                 onClick={() => setStep(step - 1)}
-                className="px-4 py-2 text-xs font-black uppercase tracking-widest border border-terminal-text/20 rounded-lg hover:border-terminal-text/50 transition-all text-terminal-text/60 hover:text-terminal-text"
+                className="px-4 py-2 text-[10px] md:text-xs font-black uppercase tracking-widest border border-terminal-text/20 rounded-lg hover:border-terminal-text/50 transition-all text-terminal-text/60 hover:text-terminal-text w-full md:w-auto text-center"
               >
                 BACK
               </button>
-            )}
+            ) : <div className="w-4 md:w-0" />}
             <button 
               onClick={nextStep}
-              className="px-6 py-2 md:py-3 bg-terminal-accent text-terminal-bg text-xs md:text-sm font-black uppercase tracking-widest rounded-lg hover:invert transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(85,255,0,0.3)]"
+              className="px-4 md:px-6 py-2 md:py-3 bg-terminal-accent text-terminal-bg text-[10px] md:text-sm font-black uppercase tracking-widest rounded-lg hover:invert transition-all flex items-center gap-1.5 md:gap-2 shadow-[0_0_15px_rgba(56,189,248,0.3)] w-full md:w-auto justify-center"
             >
               {step === steps.length - 1 ? (
-                <>INITIATE_SYSTEM <CheckCircle2 className="w-4 h-4" /></>
+                <>INITIATE_SYSTEM <CheckCircle2 className="w-3 h-3 md:w-4 md:h-4" /></>
               ) : (
-                <>PROCEED <ChevronRight className="w-4 h-4" /></>
+                <>PROCEED <ChevronRight className="w-3 h-3 md:w-4 md:h-4" /></>
               )}
             </button>
           </div>

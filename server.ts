@@ -57,46 +57,6 @@ function loadIncoDocs(): string {
 const INCO_DOCS = loadIncoDocs();
 
 // ─────────────────────────────────────────────
-// TOKEN HELPERS
-// ─────────────────────────────────────────────
-
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
-function fitDocsToTokenBudget(
-  model: AllowedModel,
-  basePromptTokens: number,
-  historyTokens: number,
-  promptTokens: number
-): { docs: string; truncated: boolean } {
-  const tpm = MODEL_CONFIG[model].tpm;
-  const safetyBuffer = 200;
-  const availableForDocs = tpm - MAX_OUTPUT_TOKENS - basePromptTokens - historyTokens - promptTokens - safetyBuffer;
-
-  if (availableForDocs <= 0) {
-    return { docs: "", truncated: true };
-  }
-
-  const maxDocChars = availableForDocs * 4;
-
-  if (INCO_DOCS.length <= maxDocChars) {
-    return { docs: INCO_DOCS, truncated: false };
-  }
-
-  let cutPoint = maxDocChars;
-  const lastNewline = INCO_DOCS.lastIndexOf("\n", cutPoint);
-  if (lastNewline > maxDocChars * 0.8) cutPoint = lastNewline;
-
-  const trimmed = INCO_DOCS.slice(0, cutPoint);
-
-  return {
-    docs: trimmed + "\n\n[INCO DOCS TRUNCATED — Token budget limit reached.]",
-    truncated: true,
-  };
-}
-
-// ─────────────────────────────────────────────
 // SYSTEM PROMPT
 // ─────────────────────────────────────────────
 
@@ -232,7 +192,7 @@ apiRouter.post("/generate", async (req, res) => {
     return res.status(400).json({ error: "INVALID_PROMPT", message: "Prompt is required" });
   }
 
-  const safeHistory = sanitizeHistory(history);
+  const safeHistory = sanitizeHistory(history) as { role: 'user' | 'assistant'; content: string }[];
   const systemPrompt = buildSystemPrompt();
 
   let openrouter;
@@ -252,7 +212,7 @@ apiRouter.post("/generate", async (req, res) => {
       system: systemPrompt,
       messages: [
         ...safeHistory,
-        { role: "user", content: prompt.trim() },
+        { role: "user" as const, content: prompt.trim() },
       ],
       temperature: 0.1, // Low temperature for coding precision
     });

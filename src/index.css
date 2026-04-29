@@ -5,20 +5,20 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-terminal-bg: var(--bg-color, #8c8f85);
-  --color-terminal-screen: var(--screen-color, #a1a49a);
-  --color-terminal-border: var(--border-color, #2a2d26);
-  --color-terminal-text: var(--text-color, #000000);
-  --color-terminal-accent: var(--accent-color, #44ff00);
-  --color-terminal-blue: #111111;
+  --color-terminal-bg: var(--bg-color, #0f172a);
+  --color-terminal-screen: var(--screen-color, #1e293b);
+  --color-terminal-border: var(--border-color, #334155);
+  --color-terminal-text: var(--text-color, #f8fafc);
+  --color-terminal-accent: var(--accent-color, #38bdf8);
+  --color-terminal-blue: #0284c7;
 }
 
 :root {
-  --bg-color: #8c8f85;
-  --screen-color: #a1a49a;
-  --border-color: #2a2d26;
-  --text-color: #000000;
-  --accent-color: #44ff00;
+  --bg-color: #0f172a;
+  --screen-color: #1e293b;
+  --border-color: #334155;
+  --text-color: #f8fafc;
+  --accent-color: #38bdf8;
 }
 
 .theme-matrix {
