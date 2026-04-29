@@ -47,8 +47,8 @@ export function useIncode() {
         // For SVM, most wallet providers like Phantom handle "connect on site load" 
         // if previously authorized, but we'll trust the saved address for now
         // or trigger a quiet connect if needed.
-      } catch (err) {
-        console.error("Reconnection failed", err);
+      } catch (err: any) {
+        toast.error("Reconnection failed: " + (err.message || String(err)));
       }
     };
 
@@ -147,7 +147,6 @@ export function useIncode() {
       // Save to cache
       localStorage.setItem(cacheKey, fullText);
     } catch (error: any) {
-      console.error(error);
       toast.error(error.message || "Failed to generate code.");
     } finally {
       setIsGenerating(false);

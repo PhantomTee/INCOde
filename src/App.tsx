@@ -50,7 +50,7 @@ export default function App() {
     fetch('/api/models')
       .then(res => res.json())
       .then(data => setAvailableModels(data.models))
-      .catch(err => console.error("Failed to load models", err));
+      .catch(err => toast.error("Failed to load models: " + err.message));
   }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

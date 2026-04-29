@@ -78,9 +78,8 @@ export const CodePanel = ({ content, isLoading, chain }: CodePanelProps) => {
         setCopied(true);
         toast.success("CODE_COPIED_TO_CLIPBOARD");
         setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        console.error('Copy failed:', err);
-        toast.error("COPY_FAILED");
+      } catch (err: any) {
+        toast.error(`COPY_FAILED: ${err.message || String(err)}`);
       }
     };
 
@@ -108,9 +107,8 @@ export const CodePanel = ({ content, isLoading, chain }: CodePanelProps) => {
       const content = await zip.generateAsync({ type: 'blob' });
       saveAs(content, `incode_project_${chain}_${Date.now()}.zip`);
       toast.success("PROJECT_EXPORTED_AS_ZIP");
-    } catch (error) {
-      console.error(error);
-      toast.error("EXPORT_FAILED");
+    } catch (error: any) {
+      toast.error(`EXPORT_FAILED: ${error.message || String(error)}`);
     }
   };
 
