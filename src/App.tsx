@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   ChevronRight,
   ShieldAlert,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { useIncode } from './hooks/useIncode';
 import { Logo, SectionHeader } from './components/Branding';
@@ -19,6 +20,7 @@ import { ChatLog } from './components/ChatLog';
 import { CodePanel } from './components/CodePanel';
 import { Templates } from './components/Templates';
 import { HistoryPanel } from './components/HistoryPanel';
+import { OnboardingTour } from './components/OnboardingTour';
 
 export default function App() {
   const {
@@ -43,6 +45,7 @@ export default function App() {
   const [prompt, setPrompt] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -128,7 +131,7 @@ export default function App() {
                     className={`px-3 py-1 text-[8px] font-black rounded-full transition-all ${chain === 'evm' ? 'bg-terminal-text text-terminal-bg' : 'text-terminal-text opacity-40'}`}
                   >EVM</button>
                   <button 
-                    onClick={() => { setChain('svm'); if(address) disconnectWallet(); }}
+                    onClick={() => { toast.error("SVM support is under development. Please use EVM."); }}
                     className={`px-3 py-1 text-[8px] font-black rounded-full transition-all ${chain === 'svm' ? 'bg-terminal-text text-terminal-bg' : 'text-terminal-text opacity-40'}`}
                   >SVM</button>
                 </div>
@@ -173,6 +176,13 @@ export default function App() {
                    <div className="w-1.5 h-1.5 bg-terminal-accent rounded-full animate-pulse" />
                    <span className="text-[7px] md:text-[8px] font-bold text-terminal-text">EVM_TESTNET</span>
                 </div>
+                <button 
+                  onClick={() => setShowTour(true)}
+                  className="flex items-center gap-1 md:gap-1.5 px-2 py-0.5 border border-terminal-text/20 bg-terminal-text/5 rounded hover:bg-terminal-text/10 transition-all"
+                >
+                   <AlertCircle className="w-3 h-3 text-terminal-accent" />
+                   <span className="text-[7px] md:text-[8px] font-bold text-terminal-text">HELP</span>
+                </button>
                 <button 
                   onClick={() => setIsSettingsOpen(true)}
                   className="flex items-center gap-1 md:gap-1.5 px-2 py-0.5 border border-terminal-text/20 bg-terminal-text/5 rounded hover:bg-terminal-text/10 transition-all"
@@ -309,8 +319,8 @@ export default function App() {
                     EVM
                    </button>
                    <button 
-                    onClick={() => setChain('svm')} 
-                    className={`px-5 py-2 border-2 border-terminal-text/40 font-black text-xs uppercase transition-all rounded-full ${chain === 'svm' ? 'bg-terminal-text text-terminal-bg' : 'hover:bg-terminal-text/5'}`}
+                    onClick={() => toast.error("SVM support is under development. Please use EVM.")} 
+                    className={`px-5 py-2 border-2 border-terminal-text/40 font-black text-xs uppercase transition-all rounded-full hover:bg-terminal-text/5`}
                    >
                     SVM
                    </button>
@@ -381,6 +391,8 @@ export default function App() {
           }}
         />
 
+        <OnboardingTour forceShow={showTour} onComplete={() => setShowTour(false)} />
+
         {/* Settings Modal */}
         {isSettingsOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -407,8 +419,8 @@ export default function App() {
                       EVM (Solidity)
                     </button>
                     <button 
-                      onClick={() => { setChain('svm'); if(address) disconnectWallet(); }} 
-                      className={`flex-1 px-5 py-3 border-2 font-black text-xs uppercase transition-all rounded-xl ${chain === 'svm' ? 'bg-terminal-text text-terminal-bg border-terminal-text' : 'border-terminal-text/20 hover:bg-terminal-text/5'}`}
+                      onClick={() => toast.error("SVM support is under development. Please use EVM.")} 
+                      className={`flex-1 px-5 py-3 border-2 font-black text-xs uppercase transition-all rounded-xl border-terminal-text/20 hover:bg-terminal-text/5`}
                     >
                       SVM (Rust)
                     </button>

@@ -87,7 +87,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    padding: 0.5rem;
+    padding: 0;
   }
   
   @media (min-width: 768px) {
@@ -102,9 +102,9 @@
     max-width: 1600px;
     height: 100%;
     background-color: var(--color-terminal-bg);
-    border: 8px solid #1a1a1a;
-    border-radius: 12px;
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.2), 0 0 25px rgba(0,0,0,0.8);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -112,7 +112,7 @@
   
   @media (min-width: 768px) {
     .terminal-screen {
-      border-width: 24px;
+      border: 24px solid #1a1a1a;
       border-radius: 40px;
       box-shadow: inset 0 0 100px rgba(0,0,0,0.2), 0 0 50px rgba(0,0,0,0.8);
     }
