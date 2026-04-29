@@ -80,24 +80,31 @@
   .crt-container {
     position: relative;
     width: 100%;
+    height: 100dvh;
     min-height: 100vh;
     background: #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow-x: hidden;
-    padding: 1rem;
+    overflow: hidden;
+    padding: 0.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .crt-container {
+      padding: 1rem;
+    }
   }
 
   .terminal-screen {
     position: relative;
     width: 100%;
     max-width: 1600px;
-    min-height: 90vh;
+    height: 100%;
     background-color: var(--color-terminal-bg);
-    border: 12px solid #1a1a1a;
+    border: 8px solid #1a1a1a;
     border-radius: 12px;
-    box-shadow: inset 0 0 100px rgba(0,0,0,0.2), 0 0 50px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.2), 0 0 25px rgba(0,0,0,0.8);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -107,6 +114,7 @@
     .terminal-screen {
       border-width: 24px;
       border-radius: 40px;
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.2), 0 0 50px rgba(0,0,0,0.8);
     }
   }
 
